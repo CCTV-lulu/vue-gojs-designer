@@ -16,7 +16,7 @@
             </div>
 
             <div id="infoDraggable" class="draggable"
-                 style="display: inline-block; vertical-align: top; padding: 5px; ":style="{left: canvasWidth}">
+                 style="display: inline-block; vertical-align: top; padding: 5px; " :style="{left: canvasWidth}">
                 <div id="infoDraggableHandle" class="handle">Info</div>
                 <div>
                     <div id="myInfo"></div>
@@ -25,7 +25,8 @@
 
             <div style="display: inline-block; vertical-align: top; width:100%">
                 <div id="myDiagramDiv"
-                     style="background-color: whitesmoke; border: solid 1px black;" :style="{height: canvasHeight, background:'url(' + image + ')'}"></div>
+                     style="background-color: whitesmoke; border: solid 1px black;"
+                     :style="{height: canvasHeight, background:'url(' + image + ')'}"></div>
             </div>
         </div>
     </div>
@@ -34,6 +35,7 @@
     import go from 'gogogojsvue'
     import $ from 'jquery'
     import '../public/jquery-ui.min'
+
     const GO = go.GraphObject.make
     // const $ = jQuery
     export default {
@@ -43,21 +45,21 @@
                 type: String,
                 default: ''
             },
-            canvasWidth:{
-                type:String,
+            canvasWidth: {
+                type: String,
                 default: '800px'
             },
-            canvasHeight:{
-                type:String,
+            canvasHeight: {
+                type: String,
                 default: '500px'
             },
-            initData:{
-                type:Object,
-                default:{}
+            initData: {
+                type: Object,
+                default: {}
             },
-            image:{
-                type:String,
-                default:''
+            image: {
+                type: String,
+                default: ''
             }
         },
         data() {
@@ -107,7 +109,13 @@
                         "draggingTool.dragsLink": true,
                         "draggingTool.isGridSnapEnabled": true,
                         // allow Ctrl-G to call groupSelection()
-                        "commandHandler.archetypeGroupData": { text: "Group", isGroup: true, color: "blue",fill:'rgba(128,128,128,0.2)',stroke:"gray" },
+                        "commandHandler.archetypeGroupData": {
+                            text: "Group",
+                            isGroup: true,
+                            color: "blue",
+                            fill: 'rgba(128,128,128,0.2)',
+                            stroke: "gray"
+                        },
                         "linkingTool.isUnconnectedLinkValid": true,
                         "linkingTool.portGravity": 20,
                         "relinkingTool.isUnconnectedLinkValid": true,
@@ -326,11 +334,40 @@
                     );
                 return linkTemplate
             },
-            myDiagramGroupTemplate(){
+            myDiagramGroupTemplate() {
                 var self = this
                 var groupTemplate = GO(go.Group, "Vertical",
-                    { selectionObjectName: "PANEL",  // selection handle goes around shape, not label
-                        ungroupable: true },  // enable Ctrl-Shift-G to ungroup a selected Group
+                    {
+                        selectionObjectName: "PANEL",  // selection handle goes around shape, not label
+                        ungroupable: true, // enable Ctrl-Shift-G to ungroup a selected Group
+                        memberValidation: self.samePrefix,
+                        handlesDragDropForMembers: true,
+                        mouseDragEnter: function (e, grp, prev) {
+                            // 这会调用samePrefix函数；如果节点的前缀与Group相同，则会返回true
+                            console.log('------------------1'+shape)
+                            if (grp.canAddMembers(grp.diagram.selection)) {
+                                var shape = grp.findObject("SHAPE");
+                                if (shape) shape.fill = "green";
+                                grp.diagram.currentCursor = "";
+                            } else {
+                                grp.diagram.currentCursor = "not-allowed";
+                            }
+                        },
+                        mouseDragLeave: function (e, grp, next) {
+                            var shape = grp.findObject("SHAPE");
+                            if (shape) shape.fill = "rgba(128,128,128,0.33)";
+                            grp.diagram.currentCursor = "";
+                        },
+                        // 当拖入行为发生时允许增加新成员节点
+                        mouseDrop: function (e, grp) {
+                            if (grp.canAddMembers(grp.diagram.selection)) {
+                                // 这样只会增加有相同前缀的成员节点
+                                grp.addMembers(grp.diagram.selection, true);
+                            } else {  // 否则的话取消拖入
+                                grp.diagram.currentTool.doCancel();
+                            }
+                        }
+                    },
                     GO(go.TextBlock,
                         {
                             font: "bold 19px sans-serif",
@@ -340,7 +377,7 @@
                         new go.Binding("text", "text").makeTwoWay(),
                         new go.Binding("stroke", "color")),
                     GO(go.Panel, "Auto",
-                        { name: "PANEL" },
+                        {name: "PANEL"},
                         GO(go.Shape, "Rectangle",  // the rectangular shape around the members
                             {
                                 // fill: "rgba(128,128,128,0.2)", stroke: "gray", strokeWidth: 3,
@@ -350,21 +387,14 @@
                                 fromLinkable: true, fromLinkableSelfNode: true, fromLinkableDuplicates: true,
                                 toLinkable: true, toLinkableSelfNode: true, toLinkableDuplicates: true
                             },
+                            new go.Binding('fill', 'isHighlighted', function (h) {
+                                // return h ? this.dropFill : this.groupDeviceFill
+                                return h ? 'rgba(128,255,255,0.2)' : 'rgba(134,205,249,1)'
+                            }).ofObject(),
                             new go.Binding("fill"),
                             new go.Binding("stroke")),
-                        GO(go.Placeholder, { margin: 10, background: "transparent" })  // represents where the members are
-                    ),
-                    { // this tooltip Adornment is shared by all groups
-                        // toolTip:
-                        //     GO(go.Adornment, "Auto",
-                        //         GO(go.Shape, { fill: "#FFFFCC" }),
-                        //         GO(go.TextBlock, { margin: 4 },
-                        //             // bind to tooltip, not to Group.data, to allow access to Group properties
-                        //             new go.Binding("text", "", self.groupInfo()).ofObject())
-                        //     ),
-                        // the same context menu Adornment is shared by all groups
-                        // contextMenu: partContextMenu
-                    }
+                        GO(go.Placeholder, {margin: 10, background: "transparent"})  // represents where the members are
+                    )
                 )
                 return groupTemplate
             },
@@ -379,14 +409,12 @@
                 }
                 return model
             },
-            groupInfo(adornment) {  // takes the tooltip or context menu, not a group node data object
-                var g = adornment.adornedPart;  // get the Group that the tooltip adorns
-                var mems = g.memberParts.count;
-                var links = 0;
-                g.memberParts.each(function(part) {
-                    if (part instanceof go.Link) links++;
-                });
-                return "Group " + g.data.key + ": " + g.data.text + "\n" + mems + " members including " + links + " links";
+            samePrefix(group, node) {
+                if (group === null) return true;  // 如果把节点拖入背景时
+                if (node instanceof go.Group) return false;  // 不能把Group添加到Group中
+                console.log('----------------执行2')
+                return true;
+                console.log('----------------执行1')
             },
             createPalette() {
                 var self = this
@@ -457,7 +485,8 @@
                             "fill": {show: Inspector.showIfPresent, type: 'color'},
                             "stroke": {show: Inspector.showIfPresent, type: 'color'},
                             "color": {show: Inspector.showIfPresent, type: 'color'},
-                            "isGroup":{ show: Inspector.showIfPresent},
+                            "isGroup": {show: Inspector.showIfPresent},
+                            "text": {}
                         }
                     });
             },
@@ -515,7 +544,8 @@
         padding-top: 10px;
         font: bold 20px sans-serif;
     }
-    .button-group{
+
+    .button-group {
         position: absolute;
         right: 20px;
         top: 10px;
@@ -540,7 +570,8 @@
         text-align: center;
         font: bold 12px sans-serif;
     }
-    #myDiagramDiv{
+
+    #myDiagramDiv {
         /*background-image: url("https://n.sinaimg.cn/sinacn/w1023h632/20180308/5519-fxpwyhv6947114.jpg");*/
         background-size: 100%;
     }
