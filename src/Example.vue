@@ -1,5 +1,6 @@
 <template>
     <designer :name="name" :canvasWidth="canvasWidth" :canvasHeight="canvasHeight" :initData="initData"
+              :image="image"
     @saveData="getSaveData"></designer>
 </template>
 
@@ -13,7 +14,8 @@
                 name:'设备监控图',
                 canvasWidth:'1000px',
                 canvasHeight:'500px',
-                initData:{}
+                initData:{},
+                image:'https://n.sinaimg.cn/sinacn/w1023h632/20180308/5519-fxpwyhv6947114.jpg'
             }
         },
         created(){

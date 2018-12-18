@@ -25,7 +25,7 @@
 
             <div style="display: inline-block; vertical-align: top; width:100%">
                 <div id="myDiagramDiv"
-                     style="background-color: whitesmoke; border: solid 1px black;" :style="{height: canvasHeight}"></div>
+                     style="background-color: whitesmoke; border: solid 1px black;" :style="{height: canvasHeight, background:'url(' + image + ')'}"></div>
             </div>
         </div>
     </div>
@@ -54,6 +54,10 @@
             initData:{
                 type:Object,
                 default:{}
+            },
+            image:{
+                type:String,
+                default:''
             }
         },
         data() {
@@ -102,6 +106,8 @@
                         allowDrop: true,  // must be true to accept drops from the Palette
                         "draggingTool.dragsLink": true,
                         "draggingTool.isGridSnapEnabled": true,
+                        // allow Ctrl-G to call groupSelection()
+                        "commandHandler.archetypeGroupData": { text: "Group", isGroup: true, color: "blue",fill:'rgba(128,128,128,0.2)',stroke:"gray" },
                         "linkingTool.isUnconnectedLinkValid": true,
                         "linkingTool.portGravity": 20,
                         "relinkingTool.isUnconnectedLinkValid": true,
@@ -135,6 +141,7 @@
                     });
                 self.myDiagram.nodeTemplate = this.myDiagramNodeTemplate()
                 self.myDiagram.linkTemplate = this.myDiagramLinkTemplate()
+                self.myDiagram.groupTemplate = this.myDiagramGroupTemplate()
                 self.myDiagram.model = this.getModel()
             },
             myDiagramNodeTemplate() {
@@ -319,6 +326,48 @@
                     );
                 return linkTemplate
             },
+            myDiagramGroupTemplate(){
+                var self = this
+                var groupTemplate = GO(go.Group, "Vertical",
+                    { selectionObjectName: "PANEL",  // selection handle goes around shape, not label
+                        ungroupable: true },  // enable Ctrl-Shift-G to ungroup a selected Group
+                    GO(go.TextBlock,
+                        {
+                            font: "bold 19px sans-serif",
+                            isMultiline: false,  // don't allow newlines in text
+                            editable: true, // allow in-place editing by user
+                        },
+                        new go.Binding("text", "text").makeTwoWay(),
+                        new go.Binding("stroke", "color")),
+                    GO(go.Panel, "Auto",
+                        { name: "PANEL" },
+                        GO(go.Shape, "Rectangle",  // the rectangular shape around the members
+                            {
+                                // fill: "rgba(128,128,128,0.2)", stroke: "gray", strokeWidth: 3,
+                                strokeWidth: 3,
+                                portId: "", cursor: "pointer",  // the Shape is the port, not the whole Node
+                                // allow all kinds of links from and to this port
+                                fromLinkable: true, fromLinkableSelfNode: true, fromLinkableDuplicates: true,
+                                toLinkable: true, toLinkableSelfNode: true, toLinkableDuplicates: true
+                            },
+                            new go.Binding("fill"),
+                            new go.Binding("stroke")),
+                        GO(go.Placeholder, { margin: 10, background: "transparent" })  // represents where the members are
+                    ),
+                    { // this tooltip Adornment is shared by all groups
+                        // toolTip:
+                        //     GO(go.Adornment, "Auto",
+                        //         GO(go.Shape, { fill: "#FFFFCC" }),
+                        //         GO(go.TextBlock, { margin: 4 },
+                        //             // bind to tooltip, not to Group.data, to allow access to Group properties
+                        //             new go.Binding("text", "", self.groupInfo()).ofObject())
+                        //     ),
+                        // the same context menu Adornment is shared by all groups
+                        // contextMenu: partContextMenu
+                    }
+                )
+                return groupTemplate
+            },
             getModel() {
                 var model = this.model
                 // var modelInfo = JSON.parse(localStorage.getItem("dataInfo"));
@@ -329,6 +378,15 @@
                     model.linkDataArray = modelInfo.linkDataArray
                 }
                 return model
+            },
+            groupInfo(adornment) {  // takes the tooltip or context menu, not a group node data object
+                var g = adornment.adornedPart;  // get the Group that the tooltip adorns
+                var mems = g.memberParts.count;
+                var links = 0;
+                g.memberParts.each(function(part) {
+                    if (part instanceof go.Link) links++;
+                });
+                return "Group " + g.data.key + ": " + g.data.text + "\n" + mems + " members including " + links + " links";
             },
             createPalette() {
                 var self = this
@@ -397,7 +455,9 @@
                             "key": {readOnly: true, show: Inspector.showIfPresent},
                             // fill and stroke would be automatically added for nodes, but we want to declare it a color also:
                             "fill": {show: Inspector.showIfPresent, type: 'color'},
-                            "stroke": {show: Inspector.showIfPresent, type: 'color'}
+                            "stroke": {show: Inspector.showIfPresent, type: 'color'},
+                            "color": {show: Inspector.showIfPresent, type: 'color'},
+                            "isGroup":{ show: Inspector.showIfPresent},
                         }
                     });
             },
@@ -479,6 +539,10 @@
         cursor: move;
         text-align: center;
         font: bold 12px sans-serif;
+    }
+    #myDiagramDiv{
+        /*background-image: url("https://n.sinaimg.cn/sinacn/w1023h632/20180308/5519-fxpwyhv6947114.jpg");*/
+        background-size: 100%;
     }
 
     #infoDraggable {

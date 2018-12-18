@@ -1,7 +1,22 @@
 {
   "name": "vue-gojs-designer",
   "version": "0.1.0",
-  "private": true,
+  "description": "A designer component for Vue.js and gojs",
+  "main": "main.js",
+  "keywords": [
+    "vue",
+    "gojs",
+    "designer",
+    "vue-component"
+  ],
+  "author": "CCTV-lulu <lulu666go@gmail.com>",
+  "homepage": "https://github.com/CCTV-lulu/vue-gojs-designer",
+  "bugs": "https://github.com/CCTV-lulu/vue-gojs-designer/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CCTV-lulu/vue-gojs-designer"
+  },
+  "license": "MIT",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
