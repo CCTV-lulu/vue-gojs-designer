@@ -5,6 +5,7 @@
             <div class="button-group">
                 <button class="add" @click="addShape">添加图形</button>
                 <button class="save" @click="save">保存</button>
+                <button class="save" @click="back" v-if="isCanBack">返回上一级</button>
             </div>
         </div>
         <div id="sample">
@@ -24,7 +25,7 @@
             </div>
 
             <div style="display: inline-block; vertical-align: top; width:100%">
-                <div id="myDiagramDiv"
+                <div :id="canvasName"
                      style="background-color: whitesmoke; border: solid 1px black;"
                      :style="{height: canvasHeight, background:'url(' + image + ')'}"></div>
             </div>
@@ -37,6 +38,11 @@
     import '../public/jquery-ui.min'
 
     const GO = go.GraphObject.make
+    import image1 from './image/images.jpg'
+    import image2 from './image/images (1).jpg'
+    import image3 from './image/下载.jpg'
+    import image4 from './image/下载 (1).jpg'
+    import image5 from './image/下载 (2).jpg'
     // const $ = jQuery
     export default {
         name: "Dash",
@@ -81,6 +87,9 @@
                 brush5: "rgb(200,184,08)",
                 fill6: "rgb(0,0,0)",
                 brush6: "rgb(0,0,0)",
+                canvasName:'myDiagramDiv',
+                isCanBack:false,
+                fatherCanvasName:[]
 
             }
         },
@@ -97,7 +106,7 @@
             },
             createMyDiagram() {
                 var self = this
-                self.myDiagram = GO(go.Diagram, "myDiagramDiv",  // must name or refer to the DIV HTML element
+                self.myDiagram = GO(go.Diagram, self.canvasName,  // must name or refer to the DIV HTML element
                     {
                         grid: GO(go.Panel, "Grid",//todo 创建网格线
                             GO(go.Shape, "LineH", {stroke: "lightgray", strokeWidth: 0.5}),
@@ -276,7 +285,14 @@
                                     wrap: go.TextBlock.WrapFit,
                                     editable: true
                                 },
-                                new go.Binding("text").makeTwoWay())
+                                new go.Binding("text").makeTwoWay()),
+                            GO(go.Picture,
+                                // Pictures should normally have an explicit width and height.
+                                // This picture has a red background, only visible when there is no source set
+                                // or when the image is partially transparent.
+                                {width: 50, height: 50, background: "red"},
+                                // Picture.source is data bound to the "source" attributke of the model data
+                                new go.Binding("source")),
                         ),
                         // four small named ports, one on each side:
                         self.makePort("T", go.Spot.Top, false, true),
@@ -344,7 +360,6 @@
                         handlesDragDropForMembers: true,
                         mouseDragEnter: function (e, grp, prev) {
                             // 这会调用samePrefix函数；如果节点的前缀与Group相同，则会返回true
-                            console.log('------------------1'+shape)
                             if (grp.canAddMembers(grp.diagram.selection)) {
                                 var shape = grp.findObject("SHAPE");
                                 if (shape) shape.fill = "green";
@@ -393,15 +408,38 @@
                             }).ofObject(),
                             new go.Binding("fill"),
                             new go.Binding("stroke")),
-                        GO(go.Placeholder, {margin: 10, background: "transparent"})  // represents where the members are
+                        GO(go.Placeholder, {margin: 10, background: "transparent"}), // represents where the members are
+                        {
+                            doubleClick: function (e, node) {// 双击事件
+                                self.handlerDC(e, node);//双击执行的方法
+                            }
+                        }
                     )
                 )
                 return groupTemplate
             },
+            handlerDC(e,obj){
+                var self = this
+                var node = obj.part
+                this.myDiagram.div = null;
+                this.fatherCanvasName.push(this.canvasName)
+                this.canvasName = 'childDiagramDiv'+node.data.key
+                this.isCanBack = true
+                setTimeout(function (){
+                    self.createMyDiagram()
+                },100)
+
+            },
             getModel() {
-                var model = this.model
+                var self = this
+                var model = self.model
                 // var modelInfo = JSON.parse(localStorage.getItem("dataInfo"));
-                var modelInfo = this.initData
+                var modelInfo = {}
+                if(self.canvasName !== "myDiagramDiv"){
+                    modelInfo = JSON.parse(localStorage.getItem(self.canvasName))
+                }else {
+                    modelInfo = self.initData
+                }
                 if (modelInfo) {
                     model.modelData = modelInfo.modelData
                     model.nodeDataArray = modelInfo.nodeDataArray
@@ -412,9 +450,7 @@
             samePrefix(group, node) {
                 if (group === null) return true;  // 如果把节点拖入背景时
                 if (node instanceof go.Group) return false;  // 不能把Group添加到Group中
-                console.log('----------------执行2')
                 return true;
-                console.log('----------------执行1')
             },
             createPalette() {
                 var self = this
@@ -447,11 +483,11 @@
                             {toArrow: "Standard", stroke: null})
                     ),
                     self.myPalette.model = new go.GraphLinksModel([
-                        {text: "Lake", fill: self.fill1, stroke: self.brush1, figure: "Hexagon"},
-                        {text: "Ocean", fill: self.fill2, stroke: self.brush2, figure: "Rectangle"},
-                        {text: "Sand", fill: self.fill3, stroke: self.brush3, figure: "Diamond"},
-                        {text: "Goldfish", fill: self.fill4, stroke: self.brush4, figure: "Octagon"},
-                        {text: "圆", fill: self.fill5, stroke: self.brush5, figure: "Circle"}
+                        {text: "Lake", fill: self.fill1, stroke: self.brush1, figure: "Hexagon", source: image1},
+                        {text: "Ocean", fill: self.fill2, stroke: self.brush2, figure: "Rectangle", source: image5},
+                        {text: "Sand", fill: self.fill3, stroke: self.brush3, figure: "Diamond", source: image2},
+                        {text: "Goldfish", fill: self.fill4, stroke: self.brush4, figure: "Octagon", source: image3},
+                        {text: "圆", fill: self.fill5, stroke: self.brush5, figure: "Circle", source: image4}
                     ], [
                         // the Palette also has a disconnected Link, which the user can drag-and-drop
                         {points: new go.List(go.Point).addAll([new go.Point(0, 0), new go.Point(30, 0), new go.Point(30, 40), new go.Point(60, 40)])}
@@ -515,14 +551,34 @@
                 });
             },
             save() {
-                this.saveDiagramProperties();  // do this first, before writing to JSON
+                var self = this
+                self.saveDiagramProperties();  // do this first, before writing to JSON
                 // localStorage.setItem("dataInfo", this.myDiagram.model.toJson());
-                this.myDiagram.isModified = false;
-                this.showShape = false
-                this.$emit('saveData', this.myDiagram.model.toJson())
+                self.myDiagram.isModified = false;
+                self.showShape = false
+                if(this.canvasName !== 'myDiagramDiv'){
+                    localStorage.setItem(this.canvasName, self.myDiagram.model.toJson());
+                }else {
+                    self.$emit('saveData', self.myDiagram.model.toJson())
+                }
             },
             saveDiagramProperties() {
                 this.myDiagram.model.modelData.position = go.Point.stringify(this.myDiagram.position);
+            },
+            back(){
+                var self = this
+                this.myDiagram.div = null;
+                this.canvasName = this.fatherCanvasName.pop()
+                if(this.canvasName){
+                    setTimeout(function (){
+                        self.createMyDiagram()
+                    },100)
+                    if(this.canvasName === 'myDiagramDiv'){
+                        self.isCanBack = false
+                    }
+
+                }
+
             }
         }
     }
