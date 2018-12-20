@@ -427,6 +427,8 @@
                 this.isCanBack = true
                 setTimeout(function (){
                     self.createMyDiagram()
+                    self.dragAndDrop()
+                    self.getNodeInfo()
                 },100)
 
             },
@@ -436,7 +438,7 @@
                 // var modelInfo = JSON.parse(localStorage.getItem("dataInfo"));
                 var modelInfo = {}
                 if(self.canvasName !== "myDiagramDiv"){
-                    modelInfo = JSON.parse(localStorage.getItem(self.canvasName))
+                    modelInfo = JSON.parse(localStorage.getItem(self.canvasName)) || {}
                 }else {
                     modelInfo = self.initData
                 }
@@ -572,6 +574,8 @@
                 if(this.canvasName){
                     setTimeout(function (){
                         self.createMyDiagram()
+                        self.dragAndDrop()
+                        self.getNodeInfo()
                     },100)
                     if(this.canvasName === 'myDiagramDiv'){
                         self.isCanBack = false
