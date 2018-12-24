@@ -305,9 +305,16 @@
                             },
                             mouseLeave: function (e, node) {
                                 self.showSmallPorts(node, false);
+                            },
+                            doubleClick: function (e, node) {// 双击事件
+                                console.log('------------------11')
+                                self.getNodeClick(e, node);//双击执行的方法
                             }
                         })
                 return nodeTemplate
+            },
+            getNodeClick(e,node){
+                alert('--------------选中节点')
             },
             myDiagramLinkTemplate() {
                 //todo 选中线的时候

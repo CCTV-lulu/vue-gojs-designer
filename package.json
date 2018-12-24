@@ -1,8 +1,8 @@
 {
   "name": "vue-gojs-designer",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A designer component for Vue.js and gojs",
-  "main": "main.js",
+  "main": "dist/index.html",
   "keywords": [
     "vue",
     "gojs",
